@@ -25,7 +25,7 @@ function TabelaAlternativa({ cabecalho, linhas }: { cabecalho: string[]; linhas:
 }
 
 export function BarrasTop({ r }: { r: Resultado }) {
-  const dados = useMemo(() => r.candidatos.slice(0, 8).map((c) => ({ nome: c.nome, partido: c.partido, pct: c.pct, votos: c.votos, cor: c.cor })), [r])
+  const dados = useMemo(() => r.candidatos.slice(0, 8).map((c) => ({ nome: r.abrangencia.tipo === 'regiao' && c.uf ? `${c.nome} (${c.uf})` : c.nome, partido: c.partido, pct: c.pct, votos: c.votos, cor: c.cor })), [r])
   if (!dados.length) return null
   return (
     <Card titulo="Mais votados">

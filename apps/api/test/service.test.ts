@@ -166,3 +166,37 @@ describe('mock: todos os cargos x UFs geram sem travar', () => {
     }
   })
 })
+
+describe('agregação por região', () => {
+  it('presidente: soma dos votos das UFs da região', async () => {
+    const { service, at } = setup()
+    at(100)
+    const ne = await service.getRecorte('presidente', undefined, 'nordeste')
+    const ufs = ['AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE']
+    const partes = await Promise.all(ufs.map((u) => service.getResultado('presidente', u)))
+    const c0 = ne.candidatos[0]!
+    expect(ne.abrangencia).toEqual({ tipo: 'regiao', codigo: 'nordeste' })
+    expect(c0.votos).toBe(partes.reduce((a, p) => a + (p.candidatos.find((c) => c.sq === c0.sq)?.votos ?? 0), 0))
+    expect(ne.secoes.total).toBe(partes.reduce((a, p) => a + p.secoes.total, 0))
+    expect(ne.votos.validos).toBe(partes.reduce((a, p) => a + p.votos.validos, 0))
+    expect(ne.candidatos.reduce((a, c) => a + c.pct, 0)).toBeLessThanOrEqual(100.001)
+    expect(ne.estado).toBe('encerrada')
+  })
+
+  it('governador: junta candidatos de todos os estados, com a UF de cada um', async () => {
+    const { service, at } = setup()
+    at(100)
+    const ne = await service.getRecorte('governador', undefined, 'nordeste')
+    expect(new Set(ne.candidatos.map((c) => c.uf))).toEqual(new Set(['AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE']))
+    const votos = ne.candidatos.map((c) => c.votos)
+    expect(votos).toEqual([...votos].sort((a, b) => b - a))
+    expect(ne.candidatos.filter((c) => c.status === 'eleito' || c.status === 'segundo-turno').length).toBeGreaterThan(0)
+  })
+
+  it('região inválida e UF explícita têm prioridade', async () => {
+    const { service } = setup()
+    await expect(service.getRecorte('presidente', undefined, 'marte')).rejects.toThrow(/inválida/)
+    const r = await service.getRecorte('governador', 'SP', 'nordeste')
+    expect(r.abrangencia).toEqual({ tipo: 'uf', codigo: 'SP' })
+  })
+})

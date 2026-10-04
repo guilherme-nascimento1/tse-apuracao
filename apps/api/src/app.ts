@@ -42,9 +42,9 @@ export async function buildApp(service: Service, opts: { logger?: boolean | obje
 
   app.get('/api/health', async () => ({ ok: true, modo: config.modo, ciclo: config.ciclo, turno: config.turno }))
   app.get('/api/config', async () => service.getConfig())
-  app.get<{ Querystring: Q }>('/api/resultado', async (req) => service.getResultado(cargoDe(req.query), req.query.uf))
+  app.get<{ Querystring: Q }>('/api/resultado', async (req) => service.getRecorte(cargoDe(req.query), req.query.uf, req.query.regiao))
   app.get<{ Querystring: Q }>('/api/resumo', async (req) => service.getResumo(cargoDe(req.query)))
-  app.get<{ Querystring: Q }>('/api/historico', async (req) => service.getHistorico(cargoDe(req.query), req.query.uf))
+  app.get<{ Querystring: Q }>('/api/historico', async (req) => service.getHistorico(cargoDe(req.query), req.query.uf, req.query.regiao))
 
   app.get<{ Querystring: Q }>('/api/ranking', async (req) => {
     const escopo = (req.query.escopo ?? 'brasil') as 'brasil' | 'regiao' | 'uf'
@@ -55,7 +55,7 @@ export async function buildApp(service: Service, opts: { logger?: boolean | obje
   app.get<{ Querystring: Q }>('/api/candidato', async (req) => {
     const sq = req.query.sq
     if (!sq || !/^\d+$/.test(sq)) throw new AppError(400, 'Parâmetro sq inválido')
-    return service.getDetalhe(cargoDe(req.query), sq, req.query.uf)
+    return service.getDetalhe(cargoDe(req.query), sq, req.query.uf, req.query.regiao)
   })
 
   app.get<{ Querystring: Q }>('/api/municipios', async (req) => service.getMunicipios(req.query.uf ?? ''))

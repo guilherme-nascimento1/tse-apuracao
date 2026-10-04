@@ -37,15 +37,13 @@ function Busca({ className }: { className?: string }) {
 function Regioes() {
   const { f, set } = useApp()
   const itens = [{ id: '' as const, nome: 'Brasil' }, ...REGIOES]
-  const bloqueado = f.cargo === 'presidente'
   return (
     <div role="group" aria-label="Região" className="flex flex-wrap gap-1.5">
       {itens.map((r) => (
         <button
-          key={r.id || 'br'} className="chip" aria-pressed={f.regiao === r.id} disabled={bloqueado && r.id !== ''}
-          title={bloqueado && r.id ? 'Presidente só tem escopo Brasil' : undefined}
-          style={bloqueado && r.id ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
-          onClick={() => set({ regiao: r.id })}
+          key={r.id || 'br'} className="chip" aria-pressed={f.regiao === r.id && (r.id === '' || !f.uf)}
+          title={r.id ? `Somar todos os estados: ${r.nome}` : undefined}
+          onClick={() => (r.id ? set({ regiao: r.id, uf: '' }) : set({ regiao: '' }))}
         >
           {r.nome}
         </button>
@@ -67,7 +65,7 @@ function Seletores() {
   const semUf = f.cargo === 'presidente'
   return (
     <>
-      <Combobox rotulo="Estado" valor={f.uf} opcoes={ufs} placeholder={semUf ? 'Todo o Brasil' : 'Escolha'} disabled={semUf} onChange={(uf) => set({ uf })} className="w-full sm:w-52" />
+      <Combobox rotulo="Estado" valor={f.uf} opcoes={ufs} placeholder={semUf ? 'Todo o Brasil' : f.regiao ? 'Toda a região' : 'Escolha'} disabled={semUf} permiteLimpar={!semUf && !!f.regiao} onChange={(uf) => set({ uf })} className="w-full sm:w-52" />
       <Combobox
         rotulo="Município" valor={f.mun} opcoes={(muns ?? []).map((m) => ({ valor: m.codigo, rotulo: m.nome }))} placeholder={semUf || !f.uf ? '—' : 'Todos'}
         disabled={semUf || !f.uf} permiteLimpar vazio="Município não encontrado" onChange={(mun) => set({ mun })} className="w-full sm:w-56"

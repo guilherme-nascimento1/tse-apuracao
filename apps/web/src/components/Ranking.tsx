@@ -21,9 +21,9 @@ function useFlash(votos: number) {
   return n
 }
 
-interface LinhaProps { c: Candidato; pos: number; max: number; comparando: boolean; vagas: number; naoIniciada: boolean; onAbrir: (sq: string) => void; onComparar: (sq: string) => void; animar: boolean; estilo?: React.CSSProperties }
+interface LinhaProps { mostraUf?: boolean; c: Candidato; pos: number; max: number; comparando: boolean; vagas: number; naoIniciada: boolean; onAbrir: (sq: string) => void; onComparar: (sq: string) => void; animar: boolean; estilo?: React.CSSProperties }
 
-const Linha = memo(function Linha({ c, pos, max, comparando, vagas, naoIniciada, onAbrir, onComparar, animar, estilo }: LinhaProps) {
+const Linha = memo(function Linha({ mostraUf, c, pos, max, comparando, vagas, naoIniciada, onAbrir, onComparar, animar, estilo }: LinhaProps) {
   const flash = useFlash(c.votos)
   const reduce = useReducedMotion()
   const largura = max > 0 ? Math.max(c.pct > 0 ? 1.5 : 0, (c.pct / max) * 100) : 0
@@ -46,7 +46,7 @@ const Linha = memo(function Linha({ c, pos, max, comparando, vagas, naoIniciada,
               {c.situacao !== 'Válido' && <span className="rounded border border-warn/40 px-1 text-[10px] font-semibold text-warn" title="Situação informada pelo TSE">{c.situacao}</span>}
             </span>
             <span className="block truncate text-xs text-mute">
-              <span className="num">{c.numero}</span> · <span title={c.partidoNome}>{c.partido}</span>{c.federacao ? ` · ${c.federacao}` : ''}{c.vice ? ` · vice ${c.vice}` : ''}
+              <span className="num">{c.numero}</span> · <span title={c.partidoNome}>{c.partido}</span>{mostraUf && c.uf ? ` · ${c.uf}` : ''}{c.federacao ? ` · ${c.federacao}` : ''}{c.vice ? ` · vice ${c.vice}` : ''}
             </span>
             <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-raised" aria-hidden>
               <span className="block h-full rounded-full transition-[width] duration-700 ease-out" style={{ width: `${largura}%`, background: c.cor }} />
@@ -90,7 +90,9 @@ export function Ranking({ r, titulo }: { r: Resultado; titulo: string }) {
   const lista = useMemo(() => filtraCandidatos(r, f.q, f.partido), [r, f.q, f.partido])
   const max = r.candidatos[0]?.pct ?? 0
   const virtual = lista.length > VIRTUAL_A_PARTIR_DE
-  const naoIniciada = r.estado === 'nao-iniciada'
+  const regional = r.abrangencia.tipo === 'regiao'
+  // somado por região não existe "eleito": esconde o selo de status só no Presidente
+  const naoIniciada = r.estado === 'nao-iniciada' || (regional && r.cargo === 'presidente')
   const abrir = (sq: string) => set({ cand: sq })
 
   return (
@@ -104,11 +106,11 @@ export function Ranking({ r, titulo }: { r: Resultado; titulo: string }) {
           acao={<button className="btn" onClick={() => set({ q: '', partido: '' })}>Limpar busca e partido</button>}
         />
       ) : virtual ? (
-        <ListaVirtual lista={lista} max={max} r={r} naoIniciada={naoIniciada} abrir={abrir} />
+        <ListaVirtual lista={lista} max={max} r={r} naoIniciada={naoIniciada} regional={regional} abrir={abrir} />
       ) : (
         <ul aria-label={titulo}>
           {lista.map(({ c, pos }) => (
-            <Linha key={c.sq} c={c} pos={pos} max={max} vagas={r.vagas} naoIniciada={naoIniciada} comparando={f.cmp.includes(c.sq)} onAbrir={abrir} onComparar={alternaComparar} animar />
+            <Linha key={c.sq} mostraUf={regional} c={c} pos={pos} max={max} vagas={r.vagas} naoIniciada={naoIniciada} comparando={f.cmp.includes(c.sq)} onAbrir={abrir} onComparar={alternaComparar} animar />
           ))}
         </ul>
       )}
@@ -116,7 +118,7 @@ export function Ranking({ r, titulo }: { r: Resultado; titulo: string }) {
   )
 }
 
-function ListaVirtual({ lista, max, r, naoIniciada, abrir }: { lista: { c: Candidato; pos: number }[]; max: number; r: Resultado; naoIniciada: boolean; abrir: (sq: string) => void }) {
+function ListaVirtual({ lista, max, r, naoIniciada, regional, abrir }: { lista: { c: Candidato; pos: number }[]; max: number; r: Resultado; naoIniciada: boolean; regional: boolean; abrir: (sq: string) => void }) {
   const { f, alternaComparar } = useApp()
   const ref = useRef<HTMLDivElement>(null)
   const v = useVirtualizer({ count: lista.length, getScrollElement: () => ref.current, estimateSize: () => (window.innerWidth < 640 ? 132 : ALTURA), overscan: 8, getItemKey: (i) => lista[i]!.c.sq })
@@ -130,7 +132,7 @@ function ListaVirtual({ lista, max, r, naoIniciada, abrir }: { lista: { c: Candi
               key={c.sq} ref={v.measureElement} data-index={vi.index}
               style={{ position: "absolute", top: 0, left: 0, right: 0, transform: `translateY(${vi.start}px)` }}
             >
-              <Linha c={c} pos={pos} max={max} vagas={r.vagas} naoIniciada={naoIniciada} comparando={f.cmp.includes(c.sq)} onAbrir={abrir} onComparar={alternaComparar} animar={false} />
+              <Linha mostraUf={regional} c={c} pos={pos} max={max} vagas={r.vagas} naoIniciada={naoIniciada} comparando={f.cmp.includes(c.sq)} onAbrir={abrir} onComparar={alternaComparar} animar={false} />
             </div>
           )
         })}

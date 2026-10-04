@@ -11,7 +11,8 @@ export function TopCards({ r }: { r: Resultado }) {
   const { set } = useApp()
   const reduce = useReducedMotion()
   const top = r.candidatos.slice(0, 3)
-  const naoIniciada = r.estado === 'nao-iniciada'
+  const regional = r.abrangencia.tipo === 'regiao'
+  const naoIniciada = r.estado === 'nao-iniciada' || (regional && r.cargo === 'presidente')
   if (!top.length) return null
   return (
     <ol className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="Três mais votados">
@@ -30,7 +31,7 @@ export function TopCards({ r }: { r: Resultado }) {
                   {!naoIniciada && <StatusBadge s={c.status} />}
                 </div>
                 <div className="truncate font-display text-base font-bold leading-tight">{c.nome}</div>
-                <div className="truncate text-xs text-mute"><span className="num">{c.numero}</span> · {c.partido}</div>
+                <div className="truncate text-xs text-mute"><span className="num">{c.numero}</span> · {c.partido}{regional && c.uf ? ` · ${c.uf}` : ''}</div>
               </div>
             </div>
             <div className="mt-4 flex items-end justify-between">

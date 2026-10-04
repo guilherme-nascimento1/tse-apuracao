@@ -2,7 +2,7 @@ import type { Resultado, Resumo } from '@tse/shared'
 import { useMunicipio, useResumo } from '../hooks/queries'
 import { useApp } from '../lib/app-state'
 import { fmtInt, fmtPct, horaLocal } from '../lib/format'
-import { ufNome } from '../lib/filtros'
+import { nomeEscopo } from '../lib/filtros'
 import { Card, CountUp, Skeleton } from './ui'
 
 function Tile({ rotulo, valor, sub, fmt = fmtInt }: { rotulo: string; valor: number; sub?: string; fmt?: (n: number) => string }) {
@@ -35,12 +35,12 @@ function Bloco({ titulo, secoes, comp, brancos, nulos, base }: {
 export function Panorama({ r }: { r: Resultado }) {
   const { f } = useApp()
   const { data: resumo } = useResumo()
-  const titulo = r.abrangencia.tipo === 'br' ? 'Brasil' : ufNome(r.abrangencia.codigo)
+  const titulo = nomeEscopo(r.abrangencia)
   return (
     <Card titulo="Panorama" direita={<span className="text-xs text-mute">TSE às {horaLocal(r.atualizadoTse)}</span>}>
       <div className="space-y-5">
         <Bloco titulo={titulo} secoes={r.secoes} comp={r.comparecimento} brancos={r.votos.brancos} nulos={r.votos.nulos} base={r.votos.total} />
-        {r.abrangencia.tipo === 'uf' && <Nacional resumo={resumo} />}
+        {r.abrangencia.tipo !== 'br' && <Nacional resumo={resumo} />}
         {f.mun && f.cargo !== 'presidente' && <Municipio uf={f.uf} codigo={f.mun} />}
       </div>
     </Card>

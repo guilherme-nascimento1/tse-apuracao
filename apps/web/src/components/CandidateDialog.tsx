@@ -49,7 +49,7 @@ export function CandidateDialog({ r }: { r?: Resultado }) {
                 <p className="mt-3 text-sm text-soft">{c.vice ? `Vice: ${c.vice}` : `Suplentes: ${c.suplentes!.join(' e ')}`}</p>
               )}
 
-              <h3 className="mb-2 mt-6 text-sm font-semibold">{r?.cargo === 'presidente' ? 'Votos por estado' : `Resultado em ${ufNome(r?.abrangencia.codigo ?? '')}`}</h3>
+              <h3 className="mb-2 mt-6 text-sm font-semibold">{r?.cargo === 'presidente' ? 'Votos por estado' : `Resultado em ${ufNome(c.uf ?? r?.abrangencia.codigo ?? '')}`}</h3>
               {isLoading ? <Skeleton className="h-40" /> : isError ? <ErrorState titulo="Detalhe indisponível" onRetry={() => void refetch()} /> : data ? (
                 <>
                   {data.observacao && <p className="mb-2 text-sm text-mute">{data.observacao}</p>}

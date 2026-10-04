@@ -70,12 +70,18 @@ export function ajustar(prev: Filtros, patch: Partial<Filtros>): { next: Filtros
   if (patch.uf !== undefined && patch.uf !== prev.uf) next.mun = ''
 
   if (next.cargo === 'presidente') {
+    // Presidente: nacional ou somado por região, nunca por estado.
     if (next.uf || next.mun) {
-      if (cargoMudou) avisos.push('Presidente tem escopo nacional: removemos o filtro de estado.')
+      if (cargoMudou) avisos.push('Presidente não tem filtro por estado: mostramos o total.')
       next.uf = ''
       next.mun = ''
     }
-    if (next.regiao && cargoMudou) next.regiao = ''
+    return { next, avisos }
+  }
+
+  if (!next.uf && next.regiao) {
+    // Região sem estado = soma/junção de todos os estados da região.
+    next.mun = ''
     return { next, avisos }
   }
 
@@ -103,3 +109,10 @@ export function ajustar(prev: Filtros, patch: Partial<Filtros>): { next: Filtros
 }
 
 export const ufNome = (s: string) => UFS.find((u) => u.sigla === s)?.nome ?? s
+
+/** Nome do recorte exibido no título: Brasil, uma região ou um estado. */
+export function nomeEscopo(a: { tipo: 'br' | 'uf' | 'regiao'; codigo: string }) {
+  if (a.tipo === 'br') return 'Brasil'
+  if (a.tipo === 'regiao') return REGIOES.find((r) => r.id === a.codigo)?.nome ?? a.codigo
+  return ufNome(a.codigo)
+}

@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events'
 import type {
-  CargoId, Candidato, ConfigApi, DetalheCandidato, Historico, LiderUf, MunicipioInfo, MunicipioPanorama, Ranking, Resultado, Resumo,
+  CargoId, Candidato, ConfigApi, Regiao, DetalheCandidato, Historico, LiderUf, MunicipioInfo, MunicipioPanorama, Ranking, Resultado, Resumo,
   ResumoUf, VotosPorUf, PontoHistorico,
 } from '@tse/shared'
 import { CARGOS, REGIOES, UFS, cargoById, cargoValidoParaUf, ufBySigla, ufsDaRegiao } from '@tse/shared'
@@ -26,6 +26,7 @@ const MAX_PONTOS = 720
 export class Service {
   readonly events = new EventEmitter()
   private resultados = new Map<string, Cached>()
+  private regionais = new Map<string, Cached>()
   private tracked = new Map<string, { cargo: CargoId; uf: string }>()
   private historicos = new Map<string, PontoHistorico[]>()
   private memo = new Map<string, { version: number; value: unknown }>()
@@ -130,6 +131,94 @@ export class Service {
     }
   }
 
+  // ---------- região (agregação de UFs) ----------
+
+  /**
+   * Presidente: soma os votos de cada candidato nas UFs da região.
+   * Demais cargos: os candidatos são por UF, então junta todos (com a UF de cada um) ordenados por votos;
+   * o % de cada candidato continua sendo o % dos válidos no próprio estado.
+   */
+  async getResultadoRegiao(cargo: CargoId, regiaoId: string): Promise<Resultado> {
+    const reg = REGIOES.find((r) => r.id === regiaoId)
+    if (!reg) throw new AppError(400, `Região inválida: ${regiaoId}`)
+    const c = cargoById(cargo)
+    if (!c) throw new AppError(400, `Cargo inválido: ${cargo}`)
+    const ufs = ufsDaRegiao(reg.id).map((u) => u.sigla).filter((uf) => cargoValidoParaUf(cargo, uf))
+    if (!ufs.length) throw new AppError(404, `${c.nome} não existe na região ${reg.nome}`)
+    const partes = await mapLimit(ufs, 6, (uf) => this.getResultado(cargo, uf))
+
+    const versao = partes.map((p) => p.versao).join('.')
+    const key = `${cargo}:regiao:${reg.id}`
+    const defasagemSeg = Math.max(0, ...partes.map((p) => p.defasagemSeg ?? 0)) || undefined
+    const antigo = this.regionais.get(key)
+    if (antigo && antigo.resultado.versao === versao) return defasagemSeg ? { ...antigo.resultado, defasagemSeg } : antigo.resultado
+
+    const soma = (f: (r: Resultado) => number) => partes.reduce((a, r) => a + f(r), 0)
+    const secoes = { total: soma((r) => r.secoes.total), totalizadas: soma((r) => r.secoes.totalizadas), pct: 0 }
+    secoes.pct = secoes.total ? (secoes.totalizadas / secoes.total) * 100 : 0
+    const comp = {
+      eleitores: soma((r) => r.comparecimento.eleitores), compareceram: soma((r) => r.comparecimento.compareceram),
+      abstencoes: soma((r) => r.comparecimento.abstencoes), pctComparecimento: 0, pctAbstencao: 0,
+    }
+    const baseComp = comp.compareceram + comp.abstencoes
+    comp.pctComparecimento = baseComp ? (comp.compareceram / baseComp) * 100 : 0
+    comp.pctAbstencao = baseComp ? (comp.abstencoes / baseComp) * 100 : 0
+    const v = {
+      total: soma((r) => r.votos.total), validos: soma((r) => r.votos.validos), nominais: soma((r) => r.votos.nominais),
+      legenda: soma((r) => r.votos.legenda), brancos: soma((r) => r.votos.brancos), nulos: soma((r) => r.votos.nulos),
+      pctValidos: 0, pctBrancos: 0, pctNulos: 0,
+    }
+    v.pctValidos = v.total ? (v.validos / v.total) * 100 : 0
+    v.pctBrancos = v.total ? (v.brancos / v.total) * 100 : 0
+    v.pctNulos = v.total ? (v.nulos / v.total) * 100 : 0
+
+    let candidatos: Candidato[]
+    if (cargo === 'presidente') {
+      const m = new Map<string, Candidato>()
+      for (const p of partes) {
+        for (const x of p.candidatos) {
+          const e = m.get(x.sq)
+          if (e) e.votos += x.votos
+          else {
+            // as fotos de presidente ficam na pasta nacional (br), não na de cada UF
+            const foto = x.foto?.replace(/\/[a-z]{2}\/(\d+)$/, '/br/$1')
+            m.set(x.sq, { ...x, foto, uf: undefined, deltaPct: undefined, deltaVotos: undefined, deltaPos: undefined })
+          }
+        }
+      }
+      candidatos = [...m.values()]
+      for (const x of candidatos) {
+        x.pct = v.validos ? (x.votos / v.validos) * 100 : 0
+        x.status = 'em-apuracao' // não existe "eleito" por região
+      }
+      candidatos.sort((a, b) => b.votos - a.votos || a.nome.localeCompare(b.nome, 'pt-BR'))
+    } else {
+      candidatos = partes.flatMap((p) => p.candidatos.map((x) => ({ ...x, deltaPct: undefined, deltaVotos: undefined, deltaPos: undefined })))
+      candidatos.sort((a, b) => b.votos - a.votos || a.nome.localeCompare(b.nome, 'pt-BR'))
+      if (c.proporcional) candidatos = candidatos.slice(0, 300)
+    }
+
+    const todas = (e: Resultado['estado']) => partes.every((p) => p.estado === e)
+    const datas = partes.map((p) => p.atualizadoTse).filter((d): d is string => !!d).sort()
+    const resultado: Resultado = {
+      cargo, abrangencia: { tipo: 'regiao', codigo: reg.id }, eleicao: partes[0]!.eleicao, turno: config.turno,
+      estado: todas('nao-iniciada') ? 'nao-iniciada' : todas('encerrada') ? 'encerrada' : 'em-apuracao',
+      vagas: cargo === 'presidente' ? 1 : soma((r) => r.vagas),
+      secoes, comparecimento: comp, votos: v, candidatos,
+      atualizadoTse: datas[datas.length - 1] ?? null, coletadoEm: new Date().toISOString(), versao,
+    }
+    if (antigo) aplicaDeltas(resultado, antigo.resultado)
+    this.regionais.set(key, { version: 0, resultado })
+    if (resultado.estado !== 'nao-iniciada') this.registraHistorico(`${cargo}:${reg.id}`, resultado, antigo?.resultado)
+    return defasagemSeg ? { ...resultado, defasagemSeg } : resultado
+  }
+
+  /** Resultado do recorte pedido: UF, região (somando as UFs) ou nacional. */
+  async getRecorte(cargo: CargoId, uf?: string, regiao?: string): Promise<Resultado> {
+    if (!uf && regiao) return this.getResultadoRegiao(cargo, regiao)
+    return this.getResultado(cargo, uf)
+  }
+
   // ---------- histórico ----------
 
   private registraHistorico(key: string, r: Resultado, prev?: Resultado) {
@@ -147,8 +236,8 @@ export class Service {
     this.historicos.set(key, lista)
   }
 
-  async getHistorico(cargo: CargoId, ufIn?: string): Promise<Historico> {
-    const r = await this.getResultado(cargo, ufIn)
+  async getHistorico(cargo: CargoId, ufIn?: string, regiao?: string): Promise<Historico> {
+    const r = await this.getRecorte(cargo, ufIn, regiao)
     const key = `${cargo}:${r.abrangencia.codigo.toLowerCase() === 'br' ? 'br' : r.abrangencia.codigo}`
     const top = r.candidatos.slice(0, 8)
     const sqs = new Set(top.map((c) => c.sq))
@@ -210,17 +299,22 @@ export class Service {
 
   // ---------- candidato ----------
 
-  async getDetalhe(cargo: CargoId, sq: string, ufIn?: string): Promise<DetalheCandidato> {
-    const base = await this.getResultado(cargo, ufIn)
+  async getDetalhe(cargo: CargoId, sq: string, ufIn?: string, regiao?: string): Promise<DetalheCandidato> {
+    const base = await this.getRecorte(cargo, ufIn, regiao)
     const idx = base.candidatos.findIndex((c) => c.sq === sq)
     if (idx < 0) throw new AppError(404, 'Candidato não encontrado nessa abrangência')
     const candidato = base.candidatos[idx]!
     const posicao = idx + 1
+    const regional = base.abrangencia.tipo === 'regiao'
     if (cargo !== 'presidente') {
-      return { cargo, candidato, posicao, porUf: [{ uf: base.abrangencia.codigo, votos: candidato.votos, pct: candidato.pct, posicao, estado: base.estado }] }
+      const uf = candidato.uf ?? base.abrangencia.codigo
+      const own = regional ? await this.getResultado(cargo, uf) : base
+      const i = own.candidatos.findIndex((c) => c.sq === sq)
+      return { cargo, candidato, posicao: regional ? posicao : i + 1, porUf: [{ uf, votos: candidato.votos, pct: i >= 0 ? own.candidatos[i]!.pct : candidato.pct, posicao: i + 1, estado: own.estado }] }
     }
+    const ufsDoRecorte = regional ? ufsDaRegiao(base.abrangencia.codigo as Regiao).map((u) => u.sigla) : UFS.map((u) => u.sigla)
     const porUf = (
-      await mapLimit(UFS.map((u) => u.sigla), 6, async (uf): Promise<VotosPorUf | null> => {
+      await mapLimit(ufsDoRecorte, 6, async (uf): Promise<VotosPorUf | null> => {
         try {
           const r = await this.getResultado(cargo, uf)
           const i = r.candidatos.findIndex((c) => c.sq === sq)

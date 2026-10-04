@@ -10,6 +10,8 @@ export interface Candidato {
   sq: string
   numero: string
   nome: string
+  /** UF do candidato (cargos estaduais); ausente nos nacionais */
+  uf?: string
   partido: string
   partidoNome: string
   federacao?: string
@@ -35,7 +37,7 @@ export interface Votos { total: number; validos: number; nominais: number; legen
 
 export interface Resultado {
   cargo: CargoId
-  abrangencia: { tipo: 'br' | 'uf'; codigo: string }
+  abrangencia: { tipo: 'br' | 'uf' | 'regiao'; codigo: string }
   eleicao: string
   turno: number
   estado: EstadoApuracao

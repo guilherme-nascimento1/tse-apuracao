@@ -153,6 +153,7 @@ function parseCandidato(
     sq: c.sqcand,
     numero: c.n,
     nome: c.nmu || c.nm || `Candidato ${c.n}`,
+    uf: ufLower === 'br' ? undefined : ufLower.toUpperCase(),
     partido: sg,
     partidoNome,
     federacao,

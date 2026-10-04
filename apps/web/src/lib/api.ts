@@ -27,12 +27,12 @@ const qs = (o: Record<string, string | undefined>) =>
 
 export const api = {
   config: () => getJson<ConfigApi>('/api/config'),
-  resultado: (cargo: CargoId, uf?: string) => getJson<Resultado>(`/api/resultado?${qs({ cargo, uf })}`),
+  resultado: (cargo: CargoId, uf?: string, regiao?: string) => getJson<Resultado>(`/api/resultado?${qs({ cargo, uf, regiao })}`),
   resumo: (cargo: CargoId) => getJson<Resumo>(`/api/resumo?${qs({ cargo })}`),
   ranking: (cargo: CargoId, escopo: 'brasil' | 'regiao' | 'uf', extra?: { regiao?: string; uf?: string }) =>
     getJson<Ranking>(`/api/ranking?${qs({ cargo, escopo, ...extra })}`),
-  historico: (cargo: CargoId, uf?: string) => getJson<Historico>(`/api/historico?${qs({ cargo, uf })}`),
-  candidato: (cargo: CargoId, sq: string, uf?: string) => getJson<DetalheCandidato>(`/api/candidato?${qs({ cargo, sq, uf })}`),
+  historico: (cargo: CargoId, uf?: string, regiao?: string) => getJson<Historico>(`/api/historico?${qs({ cargo, uf, regiao })}`),
+  candidato: (cargo: CargoId, sq: string, uf?: string, regiao?: string) => getJson<DetalheCandidato>(`/api/candidato?${qs({ cargo, sq, uf, regiao })}`),
   municipios: (uf: string) => getJson<MunicipioInfo[]>(`/api/municipios?${qs({ uf })}`),
   municipio: (uf: string, codigo: string) => getJson<MunicipioPanorama>(`/api/municipio?${qs({ uf, codigo })}`),
 }

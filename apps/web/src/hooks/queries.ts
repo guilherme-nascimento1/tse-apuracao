@@ -17,13 +17,15 @@ function usePoll() {
 
 export function useCargo() {
   const { f } = useApp()
-  return { cargo: cargoEfetivo(f), uf: f.cargo === 'presidente' ? undefined : f.uf }
+  const uf = f.cargo === 'presidente' ? undefined : f.uf || undefined
+  // região sem estado = soma dos estados da região
+  return { cargo: cargoEfetivo(f), uf, regiao: uf ? undefined : f.regiao || undefined }
 }
 
 export function useResultado() {
-  const { cargo, uf } = useCargo()
+  const { cargo, uf, regiao } = useCargo()
   const refetchInterval = usePoll()
-  return useQuery({ queryKey: ['resultado', cargo, uf], queryFn: () => api.resultado(cargo, uf), refetchInterval, placeholderData: keepPreviousData })
+  return useQuery({ queryKey: ['resultado', cargo, uf, regiao], queryFn: () => api.resultado(cargo, uf, regiao), refetchInterval, placeholderData: keepPreviousData })
 }
 
 export function useResumo() {
@@ -46,9 +48,9 @@ export function useRanking() {
 }
 
 export function useHistorico() {
-  const { cargo, uf } = useCargo()
+  const { cargo, uf, regiao } = useCargo()
   const refetchInterval = usePoll()
-  return useQuery({ queryKey: ['historico', cargo, uf], queryFn: () => api.historico(cargo, uf), refetchInterval, placeholderData: keepPreviousData })
+  return useQuery({ queryKey: ['historico', cargo, uf, regiao], queryFn: () => api.historico(cargo, uf, regiao), refetchInterval, placeholderData: keepPreviousData })
 }
 
 export function useMunicipios(uf: string) {
@@ -61,8 +63,8 @@ export function useMunicipio(uf: string, codigo: string) {
 }
 
 export function useDetalhe(sq: string) {
-  const { cargo, uf } = useCargo()
-  return useQuery({ queryKey: ['detalhe', cargo, uf, sq], queryFn: () => api.candidato(cargo, sq, uf), enabled: !!sq })
+  const { cargo, uf, regiao } = useCargo()
+  return useQuery({ queryKey: ['detalhe', cargo, uf, regiao, sq], queryFn: () => api.candidato(cargo, sq, uf, regiao), enabled: !!sq })
 }
 
 /** SSE: o backend avisa quando um arquivo muda; o polling continua como fallback. */

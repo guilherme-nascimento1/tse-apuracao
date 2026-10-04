@@ -4,7 +4,7 @@ import type { Resultado } from '@tse/shared'
 import { useConfig, useResultado, useAtualizacoesAoVivo, useCargo } from './hooks/queries'
 import { useApp } from './lib/app-state'
 import { ApiError } from './lib/api'
-import { nomeCargo, ufNome } from './lib/filtros'
+import { nomeCargo, nomeEscopo } from './lib/filtros'
 import { fmtPct } from './lib/format'
 import { BrazilMap } from './components/BrazilMap'
 import { BarrasTop, Historico, Rosca } from './components/Charts'
@@ -26,16 +26,17 @@ function MaisVotados({ r }: { r: Resultado }) {
     document.title = nomes ? `${nomeCargo(f)}: ${nomes} · Apuração 2026` : `${nomeCargo(f)} · Apuração 2026`
   }, [nomes, f])
   const proporcional = r.cargo.startsWith("deputado")
-  const lista = proporcional ? r.candidatos.slice(0, 10) : r.candidatos
+  const regionalEstadual = r.abrangencia.tipo === 'regiao' && r.cargo !== 'presidente'
+  const lista = proporcional || regionalEstadual ? r.candidatos.slice(0, 10) : r.candidatos
   if (!lista.length) return null
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-2" aria-label="Candidatos">
-      <span className="text-xs font-semibold uppercase tracking-wide text-mute">{iniciada ? (proporcional ? "Mais votados" : "Candidatos por votos") : "Candidatos"}</span>
+      <span className="text-xs font-semibold uppercase tracking-wide text-mute">{iniciada ? (proporcional || regionalEstadual ? "Mais votados" : "Candidatos por votos") : "Candidatos"}</span>
       {lista.map((c, i) => (
         <button key={c.sq} onClick={() => set({ cand: c.sq })} className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-semibold transition-colors hover:border-mute">
           <span className="h-2.5 w-2.5 rounded-full" style={{ background: c.cor }} aria-hidden />
           {iniciada && <span className="num text-mute">{i + 1}º</span>}
-          {c.nome}
+          {c.nome}{regionalEstadual && c.uf ? ` (${c.uf})` : ''}
           {iniciada && <span className="num font-normal text-soft">{fmtPct(c.pct, 1)}</span>}
         </button>
       ))}
@@ -71,7 +72,8 @@ function Conteudo() {
   }
   if (!r) return null
 
-  const escopo = r.abrangencia.tipo === 'br' ? 'Brasil' : ufNome(r.abrangencia.codigo)
+  const escopo = nomeEscopo(r.abrangencia)
+  const regionalEstadual = r.abrangencia.tipo === 'regiao' && r.cargo !== 'presidente'
   const titulo = `${nomeCargo(f)} · ${escopo}`
   return (
     <div className="space-y-4">
@@ -89,6 +91,7 @@ function Conteudo() {
       </div>
 
       <MaisVotados r={r} />
+      {regionalEstadual && <p className="text-xs text-mute">Candidatos de todos os estados do {escopo}, em ordem de votos. O percentual de cada um é sobre os votos válidos do próprio estado.</p>}
 
       {r.estado === 'nao-iniciada' && (
         <div className="card flex items-start gap-3 p-4 text-sm text-soft" role="status">
