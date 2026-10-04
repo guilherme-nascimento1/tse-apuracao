@@ -27,12 +27,13 @@ const Linha = memo(function Linha({ c, pos, max, comparando, vagas, naoIniciada,
   const flash = useFlash(c.votos)
   const reduce = useReducedMotion()
   const largura = max > 0 ? Math.max(c.pct > 0 ? 1.5 : 0, (c.pct / max) * 100) : 0
-  const Wrapper = animar ? motion.li : 'li'
+  const Wrapper = animar ? motion.li : 'div'
   const extra = animar ? { layout: reduce ? false : ('position' as const), transition: { type: 'spring', stiffness: 380, damping: 34 } } : {}
   return (
     <Wrapper
       {...(extra as object)}
       style={estilo}
+      {...(animar ? {} : { role: 'listitem' })}
       className={clsx('group relative list-none border-b border-line/70 px-1 last:border-0', flash > 0 && (flash % 2 ? 'flash' : 'flash2'))}
     >
       <div className="flex items-center gap-3 py-2.5 sm:gap-4">
@@ -118,17 +119,19 @@ export function Ranking({ r, titulo }: { r: Resultado; titulo: string }) {
 function ListaVirtual({ lista, max, r, naoIniciada, abrir }: { lista: { c: Candidato; pos: number }[]; max: number; r: Resultado; naoIniciada: boolean; abrir: (sq: string) => void }) {
   const { f, alternaComparar } = useApp()
   const ref = useRef<HTMLDivElement>(null)
-  const v = useVirtualizer({ count: lista.length, getScrollElement: () => ref.current, estimateSize: () => ALTURA, overscan: 8, getItemKey: (i) => lista[i]!.c.sq })
+  const v = useVirtualizer({ count: lista.length, getScrollElement: () => ref.current, estimateSize: () => (window.innerWidth < 640 ? 132 : ALTURA), overscan: 8, getItemKey: (i) => lista[i]!.c.sq })
   return (
     <div ref={ref} className="scroll-thin max-h-[70vh] overflow-auto" role="list" aria-label="Ranking de candidatos (lista virtualizada)">
       <div style={{ height: v.getTotalSize(), position: 'relative' }}>
         {v.getVirtualItems().map((vi) => {
           const { c, pos } = lista[vi.index]!
           return (
-            <Linha
-              key={c.sq} c={c} pos={pos} max={max} vagas={r.vagas} naoIniciada={naoIniciada} comparando={f.cmp.includes(c.sq)} onAbrir={abrir} onComparar={alternaComparar} animar={false}
-              estilo={{ position: 'absolute', top: 0, left: 0, right: 0, height: vi.size, transform: `translateY(${vi.start}px)` }}
-            />
+            <div
+              key={c.sq} ref={v.measureElement} data-index={vi.index}
+              style={{ position: "absolute", top: 0, left: 0, right: 0, transform: `translateY(${vi.start}px)` }}
+            >
+              <Linha c={c} pos={pos} max={max} vagas={r.vagas} naoIniciada={naoIniciada} comparando={f.cmp.includes(c.sq)} onAbrir={abrir} onComparar={alternaComparar} animar={false} />
+            </div>
           )
         })}
       </div>
