@@ -61,3 +61,13 @@ Filtros na URL (`?cargo=senador&uf=SP&q=...&cmp=sq1,sq2&cand=sq`). Presidente s�
 - Deputados: o status "Eleito/Suplente" vem do TSE; o mock simplifica (sem quociente eleitoral).
 - Sem Redis; com várias instâncias cada uma mantém seu cache (basta uma para a CDN).
 - A API roda com `tsx` (sem etapa de build própria) por simplicidade.
+
+## Deploy na Vercel
+
+O repositório já está pronto: `vercel.json` roda `npm run build:vercel`, que builda o front e empacota a API Fastify como uma função serverless (Build Output API, `scripts/build-vercel.mjs`).
+
+1. Em vercel.com → *Add New Project* → importe este repositório (sem alterar framework/diretórios).
+2. Em *Environment Variables* defina `TSE_MODE` (`mock`, `simulado` ou `oficial`; o padrão é `mock`), `TSE_USER_AGENT` com um contato seu e, se quiser, `TSE_TURNO`/`TSE_CICLO`.
+3. Deploy. Pela CLI: `npx vercel login` e `npx vercel --prod`.
+
+Diferenças em serverless: não há polling em background nem SSE (o front usa só polling a cada `POLL_INTERVAL_S`); o dado velho é revalidado com ETag na própria requisição; cache e histórico da noite ficam na memória de cada instância (podem reiniciar ou divergir entre instâncias); o mock usa relógio fixo para todas as instâncias mostrarem a mesma apuração.

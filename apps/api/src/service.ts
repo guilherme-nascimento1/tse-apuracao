@@ -66,6 +66,7 @@ export class Service {
       regioes: REGIOES,
       ufs: UFS,
       pollIntervalSeg: config.pollIntervalSeg,
+      sse: !config.serverless,
       geradoEm: new Date().toISOString(),
     }
   }

@@ -22,7 +22,7 @@ export class MockSource implements TseSource {
   readonly nome = 'mock'
   readonly engine: MockEngine
   constructor(engine?: MockEngine) {
-    this.engine = engine ?? new MockEngine({ durationS: config.mockDurationSeg, holdS: config.mockHoldSeg })
+    this.engine = engine ?? new MockEngine({ durationS: config.mockDurationSeg, holdS: config.mockHoldSeg, epoch: config.serverless ? 0 : undefined })
   }
 
   private cdFederal = '21270'

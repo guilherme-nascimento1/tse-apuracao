@@ -69,8 +69,10 @@ export function useDetalhe(sq: string) {
 export function useAtualizacoesAoVivo() {
   const qc = useQueryClient()
   const { pausado } = useApp()
+  const { data: cfg } = useConfig()
+  const sse = cfg?.sse === true
   useEffect(() => {
-    if (pausado || typeof EventSource === 'undefined') return
+    if (!sse || pausado || typeof EventSource === 'undefined') return
     const es = new EventSource('/api/events')
     let t: ReturnType<typeof setTimeout> | undefined
     es.addEventListener('update', () => {
@@ -80,5 +82,5 @@ export function useAtualizacoesAoVivo() {
       }, 400)
     })
     return () => { clearTimeout(t); es.close() }
-  }, [pausado, qc])
+  }, [sse, pausado, qc])
 }

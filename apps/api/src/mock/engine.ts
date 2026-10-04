@@ -82,8 +82,8 @@ export interface MockCalc {
 export class MockEngine {
   private start: number
   private univ = new Map<string, MockCand[]>()
-  constructor(readonly opts: { durationS: number; holdS: number; tickS?: number; now?: () => number }) {
-    this.start = this.now()
+  constructor(readonly opts: { durationS: number; holdS: number; tickS?: number; now?: () => number; epoch?: number }) {
+    this.start = this.opts.epoch ?? this.now()
   }
 
   private now() { return this.opts.now ? this.opts.now() : Date.now() }

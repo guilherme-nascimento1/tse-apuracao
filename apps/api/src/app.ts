@@ -71,6 +71,7 @@ export async function buildApp(service: Service, opts: { logger?: boolean | obje
 
   // Push de atualizações (SSE): o front invalida as queries e o polling serve de fallback.
   app.get('/api/events', (req, reply) => {
+    if (config.serverless) return reply.code(204).send()
     reply.hijack()
     const res = reply.raw
     res.writeHead(200, {

@@ -32,5 +32,7 @@ export const config = {
   host: env.HOST || '0.0.0.0',
   logLevel: env.LOG_LEVEL || 'info',
   webDist: env.WEB_DIST || '',
+  /** Vercel: sem processo longo (sem polling em background, sem SSE) */
+  serverless: !!env.VERCEL,
 }
 export type Config = typeof config

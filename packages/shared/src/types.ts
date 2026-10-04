@@ -116,6 +116,8 @@ export interface ConfigApi {
   regioes: { id: Regiao; nome: string }[]
   ufs: { sigla: string; nome: string; regiao: Regiao }[]
   pollIntervalSeg: number
+  /** push por SSE disponível (false em serverless) */
+  sse: boolean
   geradoEm: string
 }
 

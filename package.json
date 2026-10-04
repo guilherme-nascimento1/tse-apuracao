@@ -2,14 +2,22 @@
   "name": "tse-apuracao",
   "private": true,
   "version": "1.0.0",
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev -w @tse/api\" \"npm run dev -w @tse/web\"",
     "build": "npm run build -w @tse/web",
     "start": "npm run start -w @tse/api",
     "test": "npm run test -w @tse/api",
     "typecheck": "npm run typecheck -w @tse/shared && npm run typecheck -w @tse/api && npm run typecheck -w @tse/web",
-    "map": "node scripts/build-map.mjs"
+    "map": "node scripts/build-map.mjs",
+    "build:vercel": "npm run build -w @tse/web && node scripts/build-vercel.mjs"
   },
-  "devDependencies": { "concurrently": "^9.0.0", "typescript": "^5.6.0" }
+  "devDependencies": {
+    "concurrently": "^9.0.0",
+    "typescript": "^5.6.0",
+    "esbuild": "^0.24.0"
+  }
 }

@@ -43,6 +43,8 @@ export interface ClientOpts {
   maxConcurrency?: number
   retries?: number
   baseBackoffMs?: number
+  /** serverless: espera o refresh de dado velho em vez de deixá-lo em background (a função congela após responder) */
+  awaitStale?: boolean
 }
 
 /**
@@ -62,7 +64,7 @@ export class TseClient extends EventEmitter {
 
   constructor(private source: TseSource, private log: Logger, opts: ClientOpts) {
     super()
-    this.o = { negativeTtlMs: 10_000, maxConcurrency: 6, retries: 2, baseBackoffMs: 400, ...opts }
+    this.o = { negativeTtlMs: 10_000, maxConcurrency: 6, retries: 2, baseBackoffMs: 400, awaitStale: false, ...opts }
   }
 
   start() {
@@ -93,8 +95,9 @@ export class TseClient extends EventEmitter {
         this.entries.delete(path)
         throw new SourceError(e.lastError ?? 'fonte indisponível')
       }
-    } else if (age > this.o.pollIntervalMs * 1.5 && now >= e.nextTryAt) {
-      void this.refresh(e)
+    } else if (age > this.o.pollIntervalMs * (this.o.awaitStale ? 1 : 1.5) && now >= e.nextTryAt) {
+      if (this.o.awaitStale) await this.refresh(e)
+      else void this.refresh(e)
     }
     return this.snapshot(e)
   }
