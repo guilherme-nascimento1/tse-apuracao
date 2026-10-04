@@ -41,7 +41,7 @@ const Linha = memo(function Linha({ c, pos, max, comparando, vagas, naoIniciada,
           <Avatar c={c} size={42} />
           <span className="min-w-0 flex-1">
             <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-              <span className="truncate font-semibold">{c.nome}</span>
+              <span className="break-words font-semibold sm:truncate">{c.nome}</span>
               {c.situacao !== 'Válido' && <span className="rounded border border-warn/40 px-1 text-[10px] font-semibold text-warn" title="Situação informada pelo TSE">{c.situacao}</span>}
             </span>
             <span className="block truncate text-xs text-mute">
@@ -50,12 +50,17 @@ const Linha = memo(function Linha({ c, pos, max, comparando, vagas, naoIniciada,
             <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-raised" aria-hidden>
               <span className="block h-full rounded-full transition-[width] duration-700 ease-out" style={{ width: `${largura}%`, background: c.cor }} />
             </span>
+            <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-soft sm:hidden">
+              <span><CountUp value={c.votos} /> votos</span>
+              <Delta pct={c.deltaPct} votos={c.deltaVotos} pos={c.deltaPos} compact />
+              {!naoIniciada && <StatusBadge s={c.status} />}
+            </span>
           </span>
         </button>
         <div className="flex shrink-0 flex-col items-end gap-0.5 text-right">
           <span className="font-display text-lg font-bold leading-none sm:text-xl"><CountUp value={c.pct} format={(n) => fmtPct(n)} /></span>
-          <span className="text-xs text-soft"><CountUp value={c.votos} /> votos</span>
-          <span className="flex items-center gap-1.5">
+          <span className="hidden text-xs text-soft sm:inline"><CountUp value={c.votos} /> votos</span>
+          <span className="hidden items-center gap-1.5 sm:flex">
             <Delta pct={c.deltaPct} votos={c.deltaVotos} pos={c.deltaPos} compact />
             {!naoIniciada && <StatusBadge s={c.status} />}
           </span>
