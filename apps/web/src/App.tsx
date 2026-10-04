@@ -25,11 +25,12 @@ function MaisVotados({ r }: { r: Resultado }) {
   useEffect(() => {
     document.title = nomes ? `${nomeCargo(f)}: ${nomes} · Apuração 2026` : `${nomeCargo(f)} · Apuração 2026`
   }, [nomes, f])
-  const lista = r.candidatos.slice(0, iniciada ? 3 : 6)
+  const proporcional = r.cargo.startsWith("deputado")
+  const lista = proporcional ? r.candidatos.slice(0, 10) : r.candidatos
   if (!lista.length) return null
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-2" aria-label={iniciada ? "Candidatos mais votados" : "Candidatos"}>
-      <span className="text-xs font-semibold uppercase tracking-wide text-mute">{iniciada ? "Mais votados" : "Candidatos"}</span>
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-2" aria-label="Candidatos">
+      <span className="text-xs font-semibold uppercase tracking-wide text-mute">{iniciada ? (proporcional ? "Mais votados" : "Candidatos por votos") : "Candidatos"}</span>
       {lista.map((c, i) => (
         <button key={c.sq} onClick={() => set({ cand: c.sq })} className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-semibold transition-colors hover:border-mute">
           <span className="h-2.5 w-2.5 rounded-full" style={{ background: c.cor }} aria-hidden />
