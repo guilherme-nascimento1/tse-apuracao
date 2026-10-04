@@ -1,4 +1,6 @@
 import { ExternalLink, Hourglass } from 'lucide-react'
+import { useEffect } from 'react'
+import type { Resultado } from '@tse/shared'
 import { useConfig, useResultado, useAtualizacoesAoVivo, useCargo } from './hooks/queries'
 import { useApp } from './lib/app-state'
 import { ApiError } from './lib/api'
@@ -14,6 +16,31 @@ import { Panorama } from './components/Panorama'
 import { Ranking } from './components/Ranking'
 import { TopCards } from './components/TopCards'
 import { EmptyState, ErrorState, Skeleton, Toasts } from './components/ui'
+
+/** Nomes dos mais votados em destaque, ex.: "Lula, Renan Santos, Flávio Bolsonaro". */
+function MaisVotados({ r }: { r: Resultado }) {
+  const { f, set } = useApp()
+  const iniciada = r.estado !== "nao-iniciada"
+  const nomes = iniciada ? r.candidatos.slice(0, 3).map((c) => c.nome).join(", ") : ""
+  useEffect(() => {
+    document.title = nomes ? `${nomeCargo(f)}: ${nomes} · Apuração 2026` : `${nomeCargo(f)} · Apuração 2026`
+  }, [nomes, f])
+  const lista = r.candidatos.slice(0, iniciada ? 3 : 6)
+  if (!lista.length) return null
+  return (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-2" aria-label={iniciada ? "Candidatos mais votados" : "Candidatos"}>
+      <span className="text-xs font-semibold uppercase tracking-wide text-mute">{iniciada ? "Mais votados" : "Candidatos"}</span>
+      {lista.map((c, i) => (
+        <button key={c.sq} onClick={() => set({ cand: c.sq })} className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-semibold transition-colors hover:border-mute">
+          <span className="h-2.5 w-2.5 rounded-full" style={{ background: c.cor }} aria-hidden />
+          {iniciada && <span className="num text-mute">{i + 1}º</span>}
+          {c.nome}
+          {iniciada && <span className="num font-normal text-soft">{fmtPct(c.pct, 1)}</span>}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 function Carregando() {
   return (
@@ -59,6 +86,8 @@ function Conteudo() {
         </div>
         {f.mun && <button className="chip" onClick={() => set({ mun: '' })}>Município selecionado ✕</button>}
       </div>
+
+      <MaisVotados r={r} />
 
       {r.estado === 'nao-iniciada' && (
         <div className="card flex items-start gap-3 p-4 text-sm text-soft" role="status">
