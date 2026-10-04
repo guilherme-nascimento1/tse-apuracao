@@ -66,7 +66,7 @@ function Conteudo() {
   if (isLoading) return <Carregando />
   if (isError && !r) {
     const e = error as ApiError
-    return <ErrorState titulo={e.status === 0 ? 'Sem conexão com o servidor' : 'Falha ao buscar os dados'} texto={e.detalhe ?? e.message} onRetry={() => void refetch()} />
+    return <ErrorState titulo={e.status === 0 ? 'Sem conexão com o servidor' : 'Falha ao buscar os dados'} texto={e.status === 0 ? 'O navegador não conseguiu falar com a API (/api). Se estiver rodando localmente, confirme que a API está no ar (npm run dev, porta 3001). A tela tenta de novo sozinha.' : (e.detalhe ?? e.message)} onRetry={() => void refetch()} />
   }
   if (!r) return null
 
