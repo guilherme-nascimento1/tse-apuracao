@@ -1,0 +1,5 @@
+{
+  "name": "@tse/shared", "version": "1.0.0", "private": true, "type": "module",
+  "main": "src/index.ts", "types": "src/index.ts",
+  "scripts": { "typecheck": "tsc -p . --noEmit" }
+}

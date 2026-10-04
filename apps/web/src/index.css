@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: 11 15 20; --surface: 18 24 33; --raised: 26 34 46; --line: 40 50 64;
+  --ink: 238 242 247; --soft: 168 180 196; --mute: 125 138 156;
+  --ok: 74 222 128; --warn: 250 204 21; --info: 96 165 250; --bad: 248 113 113;
+}
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: 244 246 249; --surface: 255 255 255; --raised: 241 244 248; --line: 221 227 235;
+  --ink: 15 23 35; --soft: 71 85 105; --mute: 100 116 139;
+  --ok: 21 128 61; --warn: 161 98 7; --info: 29 78 216; --bad: 185 28 28;
+}
+
+html { background: rgb(var(--bg)); }
+body { margin: 0; background: rgb(var(--bg)); color: rgb(var(--ink)); font-family: Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+.num { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+.card { @apply rounded-2xl border border-line bg-surface; }
+.btn { @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-line bg-raised px-3 py-1.5 text-sm font-medium text-ink transition-colors duration-150 hover:border-mute focus-visible:outline-none; }
+.chip { @apply inline-flex items-center gap-1 rounded-full border border-line px-3 py-1 text-sm text-soft transition-colors duration-150 hover:text-ink; }
+.chip[aria-pressed='true'], .chip[aria-selected='true'] { @apply border-ink/60 bg-ink text-bg font-semibold; }
+:focus-visible { outline: 2px solid rgb(var(--info)); outline-offset: 2px; border-radius: 6px; }
+.skel { position: relative; overflow: hidden; background: rgb(var(--raised)); border-radius: 8px; }
+.skel::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgb(var(--line) / 0.7), transparent); animation: shimmer 1.6s infinite; }
+@keyframes flash { 0% { background-color: rgb(var(--info) / 0.28); } 100% { background-color: transparent; } }
+.flash { animation: flash 1.4s ease-out; }
+.scroll-thin { scrollbar-width: thin; scrollbar-color: rgb(var(--line)) transparent; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}
+.recharts-text { fill: rgb(var(--mute)); }
+@keyframes flash2 { 0% { background-color: rgb(var(--info) / 0.28); } 100% { background-color: transparent; } }
+.flash2 { animation: flash2 1.4s ease-out; }
