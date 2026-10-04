@@ -7,7 +7,7 @@ React + Vite + Tailwind no front; Fastify como proxy/cache/normalizador no back.
 
 ```bash
 npm install
-cp .env.example .env      # TSE_MODE=mock por padrão
+cp .env.example .env      # opcional: TSE_MODE=oficial já é o padrão
 npm run dev               # API em :3001, web em http://localhost:5173
 npm test                  # parser, normalizador, cache/retry e mock ponta a ponta
 npm run typecheck
@@ -19,7 +19,7 @@ Com Docker (API + front buildado na mesma porta): `docker compose up --build` �
 
 | `TSE_MODE` | Fonte | Para quê |
 |---|---|---|
-| `mock` | gerador local, apuração de 0 a 100% em `MOCK_DURATION_S` (reinicia após `MOCK_HOLD_S`) | desenvolver/demonstrar a qualquer hora |
+| `mock` (só para demonstração) | gerador local, apuração de 0 a 100% em `MOCK_DURATION_S` (reinicia após `MOCK_HOLD_S`) | desenvolver/demonstrar a qualquer hora |
 | `simulado` | `https://resultados-sim.tse.jus.br/simulado/simulado2026` | testar com o formato real |
 | `oficial` | `https://resultados.tse.jus.br/oficial` | noite da eleição |
 
@@ -67,7 +67,7 @@ Filtros na URL (`?cargo=senador&uf=SP&q=...&cmp=sq1,sq2&cand=sq`). Presidente s�
 O repositório já está pronto: `vercel.json` roda `npm run build:vercel`, que builda o front e empacota a API Fastify como uma função serverless (Build Output API, `scripts/build-vercel.mjs`).
 
 1. Em vercel.com → *Add New Project* → importe este repositório (sem alterar framework/diretórios).
-2. Em *Environment Variables* defina `TSE_MODE` (`mock`, `simulado` ou `oficial`; o padrão é `mock`), `TSE_USER_AGENT` com um contato seu e, se quiser, `TSE_TURNO`/`TSE_CICLO`.
+2. Em *Environment Variables* defina `TSE_MODE` (`mock`, `simulado` ou `oficial`; o padrão é `oficial`), `TSE_USER_AGENT` com um contato seu e, se quiser, `TSE_TURNO`/`TSE_CICLO`.
 3. Deploy. Pela CLI: `npx vercel login` e `npx vercel --prod`.
 
 Diferenças em serverless: não há polling em background nem SSE (o front usa só polling a cada `POLL_INTERVAL_S`); o dado velho é revalidado com ETag na própria requisição; cache e histórico da noite ficam na memória de cada instância (podem reiniciar ou divergir entre instâncias); o mock usa relógio fixo para todas as instâncias mostrarem a mesma apuração.

@@ -1,11 +1,11 @@
 # docker compose up --build   ->   http://localhost:3001
-# Troque o modo: TSE_MODE=simulado docker compose up --build
+# Troque o modo: TSE_MODE=mock docker compose up --build
 services:
   app:
     build: .
     ports: ["3001:3001"]
     environment:
-      TSE_MODE: ${TSE_MODE:-mock}
+      TSE_MODE: ${TSE_MODE:-oficial}
       TSE_CICLO: ${TSE_CICLO:-ele2026}
       TSE_TURNO: ${TSE_TURNO:-1}
       TSE_BASE_URL: ${TSE_BASE_URL:-}

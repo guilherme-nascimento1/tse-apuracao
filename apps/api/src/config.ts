@@ -1,7 +1,7 @@
 import type { Modo } from '@tse/shared'
 
 const env = process.env
-const modo = (env.TSE_MODE ?? 'mock') as Modo
+const modo = (env.TSE_MODE ?? 'oficial') as Modo
 if (!['mock', 'simulado', 'oficial'].includes(modo)) {
   throw new Error(`TSE_MODE inválido: "${modo}" (use mock, simulado ou oficial)`)
 }
