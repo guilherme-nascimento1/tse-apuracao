@@ -139,11 +139,12 @@ export class Service {
    * o % de cada candidato continua sendo o % dos válidos no próprio estado.
    */
   async getResultadoRegiao(cargo: CargoId, regiaoId: string): Promise<Resultado> {
-    const reg = REGIOES.find((r) => r.id === regiaoId)
+    const brasil = regiaoId === 'brasil'
+    const reg = brasil ? { id: 'brasil', nome: 'Brasil' } : REGIOES.find((r) => r.id === regiaoId)
     if (!reg) throw new AppError(400, `Região inválida: ${regiaoId}`)
     const c = cargoById(cargo)
     if (!c) throw new AppError(400, `Cargo inválido: ${cargo}`)
-    const ufs = ufsDaRegiao(reg.id).map((u) => u.sigla).filter((uf) => cargoValidoParaUf(cargo, uf))
+    const ufs = (brasil ? UFS : ufsDaRegiao(reg.id as Regiao)).map((u) => u.sigla).filter((uf) => cargoValidoParaUf(cargo, uf))
     if (!ufs.length) throw new AppError(404, `${c.nome} não existe na região ${reg.nome}`)
     const partes = await mapLimit(ufs, 6, (uf) => this.getResultado(cargo, uf))
 
@@ -215,6 +216,8 @@ export class Service {
 
   /** Resultado do recorte pedido: UF, região (somando as UFs) ou nacional. */
   async getRecorte(cargo: CargoId, uf?: string, regiao?: string): Promise<Resultado> {
+    // Presidente em "Brasil" é o resultado nacional (arquivo br), não uma soma de UFs
+    if (!uf && regiao === 'brasil' && cargo === 'presidente') return this.getResultado(cargo)
     if (!uf && regiao) return this.getResultadoRegiao(cargo, regiao)
     return this.getResultado(cargo, uf)
   }

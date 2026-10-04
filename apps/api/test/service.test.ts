@@ -200,3 +200,20 @@ describe('agregação por região', () => {
     expect(r.abrangencia).toEqual({ tipo: 'uf', codigo: 'SP' })
   })
 })
+
+describe('Brasil (todos os estados) nos cargos estaduais', () => {
+  it('governador: junta os candidatos dos 27 estados', async () => {
+    const { service, at } = setup()
+    at(100)
+    const br = await service.getRecorte('governador', undefined, 'brasil')
+    expect(br.abrangencia).toEqual({ tipo: 'regiao', codigo: 'brasil' })
+    expect(new Set(br.candidatos.map((c) => c.uf)).size).toBe(27)
+    const votos = br.candidatos.map((c) => c.votos)
+    expect(votos).toEqual([...votos].sort((a, b) => b - a))
+  })
+  it('presidente em "brasil" é o resultado nacional', async () => {
+    const { service, at } = setup()
+    at(100)
+    expect((await service.getRecorte('presidente', undefined, 'brasil')).abrangencia.tipo).toBe('br')
+  })
+})

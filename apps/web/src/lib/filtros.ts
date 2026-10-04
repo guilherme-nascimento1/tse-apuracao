@@ -6,7 +6,8 @@ export type CargoUi = Exclude<CargoId, 'deputado-distrital'>
 
 export interface Filtros {
   cargo: CargoUi
-  regiao: Regiao | ''
+  /** '' = sem região; 'brasil' = junta todos os estados (cargos estaduais) */
+  regiao: Regiao | 'brasil' | ''
   uf: string
   mun: string
   q: string
@@ -36,7 +37,7 @@ export function lerUrl(search = location.search): Filtros {
   const cargoRaw = p.get('cargo') === 'deputado-distrital' ? 'deputado-estadual' : p.get('cargo')
   const cargo = CARGOS_UI.find((c) => c.id === cargoRaw)?.id ?? 'presidente'
   const uf = (p.get('uf') ?? '').toUpperCase()
-  const regiao = REGIOES.find((r) => r.id === p.get('regiao'))?.id ?? ''
+  const regiao = p.get('regiao') === 'brasil' ? 'brasil' : (REGIOES.find((r) => r.id === p.get('regiao'))?.id ?? '')
   const base: Filtros = {
     cargo, regiao, uf: ufBySigla(uf) ? uf : '', mun: p.get('mun') ?? '', q: p.get('q') ?? '', partido: p.get('partido') ?? '',
     cmp: (p.get('cmp') ?? '').split(',').filter(Boolean).slice(0, 3), cand: p.get('cand') ?? '',
@@ -76,6 +77,7 @@ export function ajustar(prev: Filtros, patch: Partial<Filtros>): { next: Filtros
       next.uf = ''
       next.mun = ''
     }
+    if (next.regiao === 'brasil') next.regiao = ''
     return { next, avisos }
   }
 
@@ -86,14 +88,14 @@ export function ajustar(prev: Filtros, patch: Partial<Filtros>): { next: Filtros
   }
 
   if (!next.uf) {
-    const uf = (next.regiao ? ufsDaRegiao(next.regiao)[0]?.sigla : undefined) ?? 'SP'
+    const uf = (next.regiao && next.regiao !== 'brasil' ? ufsDaRegiao(next.regiao)[0]?.sigla : undefined) ?? 'SP'
     next.uf = uf
     next.mun = ''
     if (cargoMudou || patch.uf === '') avisos.push(`${nome} exige um estado: selecionamos ${ufBySigla(uf)!.nome}.`)
   }
   const regiaoDaUf = ufBySigla(next.uf)!.regiao
   if (next.regiao && next.regiao !== regiaoDaUf) {
-    if (patch.regiao !== undefined && patch.regiao !== prev.regiao) {
+    if (patch.regiao !== undefined && patch.regiao !== prev.regiao && next.regiao !== 'brasil') {
       const uf = ufsDaRegiao(next.regiao)[0]!.sigla
       avisos.push(`${ufBySigla(next.uf)!.nome} não fica nessa região: mudamos para ${ufBySigla(uf)!.nome}.`)
       next.uf = uf
@@ -113,6 +115,7 @@ export const ufNome = (s: string) => UFS.find((u) => u.sigla === s)?.nome ?? s
 /** Nome do recorte exibido no título: Brasil, uma região ou um estado. */
 export function nomeEscopo(a: { tipo: 'br' | 'uf' | 'regiao'; codigo: string }) {
   if (a.tipo === 'br') return 'Brasil'
+  if (a.tipo === 'regiao' && a.codigo === 'brasil') return 'Brasil'
   if (a.tipo === 'regiao') return REGIOES.find((r) => r.id === a.codigo)?.nome ?? a.codigo
   return ufNome(a.codigo)
 }

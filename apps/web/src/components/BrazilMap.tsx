@@ -56,7 +56,7 @@ export function BrazilMap() {
             <svg viewBox={`0 0 ${geo.width} ${geo.height}`} className="h-auto w-full" role="group" aria-label={titulo}>
               {Object.entries(UFS_GEO).map(([uf, g]) => {
                 const d = porUf.get(uf)
-                const fora = !!f.regiao && g.regiao.toLowerCase() !== f.regiao
+                const fora = !!f.regiao && f.regiao !== 'brasil' && g.regiao.toLowerCase() !== f.regiao
                 const sel = f.uf === uf && f.cargo !== 'presidente'
                 const desc = d?.lider ? `${d.lider.nome}, ${d.lider.partido}, ${fmtPct(d.lider.pct, 1)}` : 'sem resultado'
                 return (

@@ -77,18 +77,22 @@ const Linha = memo(function Linha({ mostraUf, c, pos, max, comparando, vagas, na
   )
 })
 
-export function filtraCandidatos(r: Resultado | undefined, q: string, partido: string) {
+export function filtraCandidatos(r: Resultado | undefined, q: string, partido: string, ordem: 'votos' | 'pct' = 'votos') {
   if (!r) return []
   const n = semAcento(q.trim())
-  return r.candidatos
+  const base = ordem === 'pct' ? [...r.candidatos].sort((a, b) => b.pct - a.pct || b.votos - a.votos) : r.candidatos
+  return base
     .map((c, i) => ({ c, pos: i + 1 }))
     .filter(({ c }) => (!partido || c.partido === partido) && (!n || semAcento(`${c.nome} ${c.numero} ${c.partido} ${c.partidoNome} ${c.federacao ?? ''}`).includes(n)))
 }
 
 export function Ranking({ r, titulo }: { r: Resultado; titulo: string }) {
   const { f, set, alternaComparar } = useApp()
-  const lista = useMemo(() => filtraCandidatos(r, f.q, f.partido), [r, f.q, f.partido])
-  const max = r.candidatos[0]?.pct ?? 0
+  const [ordem, setOrdem] = useState<'votos' | 'pct'>('votos')
+  const regionalEstadual = r.abrangencia.tipo === 'regiao' && r.cargo !== 'presidente'
+  const ordenacao = regionalEstadual ? ordem : 'votos'
+  const lista = useMemo(() => filtraCandidatos(r, f.q, f.partido, ordenacao), [r, f.q, f.partido, ordenacao])
+  const max = Math.max(0, ...r.candidatos.map((c) => c.pct))
   const virtual = lista.length > VIRTUAL_A_PARTIR_DE
   const regional = r.abrangencia.tipo === 'regiao'
   // somado por região não existe "eleito": esconde o selo de status só no Presidente
@@ -98,7 +102,12 @@ export function Ranking({ r, titulo }: { r: Resultado; titulo: string }) {
   return (
     <Card
       titulo={titulo}
-      direita={<span className="text-xs text-mute">{lista.length === r.candidatos.length ? `${fmtInt(r.candidatos.length)} candidatos` : `${fmtInt(lista.length)} de ${fmtInt(r.candidatos.length)}`}{r.vagas > 1 ? ` · ${r.vagas} vagas` : ''}</span>}
+      direita={<div className="flex items-center gap-3">{regionalEstadual && (
+        <div role="group" aria-label="Ordenar por" className="flex gap-1 text-xs">
+          <button className="chip !px-2.5 !py-0.5 !text-xs" aria-pressed={ordem === 'votos'} onClick={() => setOrdem('votos')}>Mais votos</button>
+          <button className="chip !px-2.5 !py-0.5 !text-xs" aria-pressed={ordem === 'pct'} onClick={() => setOrdem('pct')}>Maior % no estado</button>
+        </div>
+      )}<span className="text-xs text-mute">{lista.length === r.candidatos.length ? `${fmtInt(r.candidatos.length)} candidatos` : `${fmtInt(lista.length)} de ${fmtInt(r.candidatos.length)}`}{r.vagas > 1 ? ` · ${r.vagas} vagas` : ''}</span></div>}
     >
       {lista.length === 0 ? (
         <EmptyState

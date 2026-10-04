@@ -41,9 +41,9 @@ function Regioes() {
     <div role="group" aria-label="Região" className="flex flex-wrap gap-1.5">
       {itens.map((r) => (
         <button
-          key={r.id || 'br'} className="chip" aria-pressed={f.regiao === r.id && (r.id === '' || !f.uf)}
-          title={r.id ? `Somar todos os estados: ${r.nome}` : undefined}
-          onClick={() => (r.id ? set({ regiao: r.id, uf: '' }) : set({ regiao: '' }))}
+          key={r.id || 'br'} className="chip" aria-pressed={r.id === '' ? (f.cargo === 'presidente' ? !f.regiao : f.regiao === 'brasil' && !f.uf) : f.regiao === r.id && !f.uf}
+          title={r.id ? `Todos os estados: ${r.nome}` : f.cargo === 'presidente' ? 'Total nacional' : 'Candidatos de todos os estados do Brasil'}
+          onClick={() => (r.id ? set({ regiao: r.id, uf: '' }) : f.cargo === 'presidente' ? set({ regiao: '' }) : set({ regiao: 'brasil', uf: '' }))}
         >
           {r.nome}
         </button>
@@ -55,7 +55,7 @@ function Regioes() {
 function Seletores() {
   const { f, set } = useApp()
   const { data: res } = useResultado()
-  const ufs = useMemo(() => (f.regiao ? ufsDaRegiao(f.regiao) : UFS).map((u) => ({ valor: u.sigla, rotulo: u.nome, sub: u.sigla })), [f.regiao])
+  const ufs = useMemo(() => (f.regiao && f.regiao !== 'brasil' ? ufsDaRegiao(f.regiao) : UFS).map((u) => ({ valor: u.sigla, rotulo: u.nome, sub: u.sigla })), [f.regiao])
   const { data: muns } = useMunicipios(f.cargo === 'presidente' ? '' : f.uf)
   const partidos = useMemo(() => {
     const m = new Map<string, number>()
@@ -65,7 +65,7 @@ function Seletores() {
   const semUf = f.cargo === 'presidente'
   return (
     <>
-      <Combobox rotulo="Estado" valor={f.uf} opcoes={ufs} placeholder={semUf ? 'Todo o Brasil' : f.regiao ? 'Toda a região' : 'Escolha'} disabled={semUf} permiteLimpar={!semUf && !!f.regiao} onChange={(uf) => set({ uf })} className="w-full sm:w-52" />
+      <Combobox rotulo="Estado" valor={f.uf} opcoes={ufs} placeholder={semUf ? 'Todo o Brasil' : f.regiao === 'brasil' ? 'Todos os estados' : f.regiao ? 'Toda a região' : 'Escolha'} disabled={semUf} permiteLimpar={!semUf && !!f.regiao} onChange={(uf) => set({ uf })} className="w-full sm:w-52" />
       <Combobox
         rotulo="Município" valor={f.mun} opcoes={(muns ?? []).map((m) => ({ valor: m.codigo, rotulo: m.nome }))} placeholder={semUf || !f.uf ? '—' : 'Todos'}
         disabled={semUf || !f.uf} permiteLimpar vazio="Município não encontrado" onChange={(mun) => set({ mun })} className="w-full sm:w-56"
